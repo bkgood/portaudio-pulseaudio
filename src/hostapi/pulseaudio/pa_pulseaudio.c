@@ -64,45 +64,46 @@ extern "C"
 {
 #endif /* __cplusplus */
 
-PaError PaPulseAudio_Initialize( PaUtilHostApiRepresentation **hostApi, PaHostApiIndex index );
+PaError PaPulseAudio_Initialize(PaUtilHostApiRepresentation **hostApi,
+        PaHostApiIndex index);
 
 #ifdef __cplusplus
 }
 #endif /* __cplusplus */
 
 
-static void Terminate( struct PaUtilHostApiRepresentation *hostApi );
-static PaError IsFormatSupported( struct PaUtilHostApiRepresentation *hostApi,
-                                  const PaStreamParameters *inputParameters,
-                                  const PaStreamParameters *outputParameters,
-                                  double sampleRate );
-static PaError OpenStream( struct PaUtilHostApiRepresentation *hostApi,
-                           PaStream** s,
-                           const PaStreamParameters *inputParameters,
-                           const PaStreamParameters *outputParameters,
-                           double sampleRate,
-                           unsigned long framesPerBuffer,
-                           PaStreamFlags streamFlags,
-                           PaStreamCallback *streamCallback,
-                           void *userData );
-static PaError CloseStream( PaStream* stream );
-static PaError StartStream( PaStream *stream );
-static PaError StopStream( PaStream *stream );
-static PaError AbortStream( PaStream *stream );
-static PaError IsStreamStopped( PaStream *s );
-static PaError IsStreamActive( PaStream *stream );
-static PaTime GetStreamTime( PaStream *stream );
-static double GetStreamCpuLoad( PaStream* stream );
-static PaError ReadStream( PaStream* stream, void *buffer, unsigned long frames );
-static PaError WriteStream( PaStream* stream, const void *buffer, unsigned long frames );
-static signed long GetStreamReadAvailable( PaStream* stream );
-static signed long GetStreamWriteAvailable( PaStream* stream );
+static void Terminate(struct PaUtilHostApiRepresentation *hostApi);
+static PaError IsFormatSupported(struct PaUtilHostApiRepresentation *hostApi,
+                                 const PaStreamParameters *inputParameters,
+                                 const PaStreamParameters *outputParameters,
+                                 double sampleRate);
+static PaError OpenStream(struct PaUtilHostApiRepresentation *hostApi,
+                          PaStream** s,
+                          const PaStreamParameters *inputParameters,
+                          const PaStreamParameters *outputParameters,
+                          double sampleRate,
+                          unsigned long framesPerBuffer,
+                          PaStreamFlags streamFlags,
+                          PaStreamCallback *streamCallback,
+                          void *userData);
+static PaError CloseStream(PaStream* stream);
+static PaError StartStream(PaStream *stream);
+static PaError StopStream(PaStream *stream);
+static PaError AbortStream(PaStream *stream);
+static PaError IsStreamStopped(PaStream *s);
+static PaError IsStreamActive(PaStream *stream);
+static PaTime GetStreamTime(PaStream *stream);
+static double GetStreamCpuLoad(PaStream* stream);
+static PaError ReadStream(PaStream* stream, void *buffer, unsigned long frames);
+static PaError WriteStream(PaStream* stream, const void *buffer, unsigned long frames);
+static signed long GetStreamReadAvailable(PaStream* stream);
+static signed long GetStreamWriteAvailable(PaStream* stream);
 
 
 /* IMPLEMENT ME: a macro like the following one should be used for reporting
  host errors */
-#define PA_SKELETON_SET_LAST_HOST_ERROR( errorCode, errorText ) \
-    PaUtil_SetLastHostErrorInfo( paInDevelopment, errorCode, errorText )
+#define PA_PULSEAUDIO_SET_LAST_HOST_ERROR(errorCode, errorText) \
+    PaUtil_SetLastHostErrorInfo(paInDevelopment, errorCode, errorText)
 
 /* PaPulseAudioHostApiRepresentation - host api datastructure specific to this implementation */
 
@@ -116,26 +117,26 @@ typedef struct
 
     /* implementation specific data goes here */
 }
-PaPulseAudioHostApiRepresentation;  /* IMPLEMENT ME: rename this */
+PaPulseAudioHostApiRepresentation;
 
 
-PaError PaPulseAudio_Initialize( PaUtilHostApiRepresentation **hostApi, PaHostApiIndex hostApiIndex )
+PaError PaPulseAudio_Initialize(PaUtilHostApiRepresentation **hostApi,
+        PaHostApiIndex hostApiIndex)
 {
     PaError result = paNoError;
     int i, deviceCount;
     PaPulseAudioHostApiRepresentation *skeletonHostApi;
     PaDeviceInfo *deviceInfoArray;
 
-    skeletonHostApi = (PaPulseAudioHostApiRepresentation*)PaUtil_AllocateMemory( sizeof(PaPulseAudioHostApiRepresentation) );
-    if( !skeletonHostApi )
-    {
+    skeletonHostApi = (PaPulseAudioHostApiRepresentation*)
+        PaUtil_AllocateMemory(sizeof(PaPulseAudioHostApiRepresentation));
+    if (!skeletonHostApi) {
         result = paInsufficientMemory;
         goto error;
     }
 
     skeletonHostApi->allocations = PaUtil_CreateAllocationGroup();
-    if( !skeletonHostApi->allocations )
-    {
+    if (!skeletonHostApi->allocations) {
         result = paInsufficientMemory;
         goto error;
     }
@@ -143,7 +144,7 @@ PaError PaPulseAudio_Initialize( PaUtilHostApiRepresentation **hostApi, PaHostAp
     *hostApi = &skeletonHostApi->inheritedHostApiRep;
     (*hostApi)->info.structVersion = 1;
     (*hostApi)->info.type = paInDevelopment;            /* IMPLEMENT ME: change to correct type id */
-    (*hostApi)->info.name = "skeleton implementation";  /* IMPLEMENT ME: change to correct name */
+    (*hostApi)->info.name = "PulseAudio";  /* IMPLEMENT ME: change to correct name */
 
     (*hostApi)->info.defaultInputDevice = paNoDevice;  /* IMPLEMENT ME */
     (*hostApi)->info.defaultOutputDevice = paNoDevice; /* IMPLEMENT ME */
@@ -152,38 +153,37 @@ PaError PaPulseAudio_Initialize( PaUtilHostApiRepresentation **hostApi, PaHostAp
 
     deviceCount = 0; /* IMPLEMENT ME */
 
-    if( deviceCount > 0 )
-    {
-        (*hostApi)->deviceInfos = (PaDeviceInfo**)PaUtil_GroupAllocateMemory(
-                skeletonHostApi->allocations, sizeof(PaDeviceInfo*) * deviceCount );
-        if( !(*hostApi)->deviceInfos )
-        {
+    if (deviceCount > 0) {
+        (*hostApi)->deviceInfos = (PaDeviceInfo**) PaUtil_GroupAllocateMemory(
+                skeletonHostApi->allocations,
+                sizeof(PaDeviceInfo*) * deviceCount);
+        if (!(*hostApi)->deviceInfos) {
             result = paInsufficientMemory;
             goto error;
         }
 
         /* allocate all device info structs in a contiguous block */
-        deviceInfoArray = (PaDeviceInfo*)PaUtil_GroupAllocateMemory(
-                skeletonHostApi->allocations, sizeof(PaDeviceInfo) * deviceCount );
-        if( !deviceInfoArray )
-        {
+        deviceInfoArray = (PaDeviceInfo*) PaUtil_GroupAllocateMemory(
+                skeletonHostApi->allocations,
+                sizeof(PaDeviceInfo) * deviceCount);
+        if (!deviceInfoArray) {
             result = paInsufficientMemory;
             goto error;
         }
 
-        for( i=0; i < deviceCount; ++i )
+        for (i = 0; i < deviceCount; ++i)
         {
             PaDeviceInfo *deviceInfo = &deviceInfoArray[i];
             deviceInfo->structVersion = 2;
             deviceInfo->hostApi = hostApiIndex;
             deviceInfo->name = 0; /* IMPLEMENT ME: allocate block and copy name eg:
-                deviceName = (char*)PaUtil_GroupAllocateMemory( skeletonHostApi->allocations, strlen(srcName) + 1 );
-                if( !deviceName )
-                {
+                deviceName = (char*)PaUtil_GroupAllocateMemory(
+                    skeletonHostApi->allocations, strlen(srcName) + 1);
+                if (!deviceName) {
                     result = paInsufficientMemory;
                     goto error;
                 }
-                strcpy( deviceName, srcName );
+                strcpy(deviceName, srcName);
                 deviceInfo->name = deviceName;
             */
 
@@ -206,116 +206,110 @@ PaError PaPulseAudio_Initialize( PaUtilHostApiRepresentation **hostApi, PaHostAp
     (*hostApi)->OpenStream = OpenStream;
     (*hostApi)->IsFormatSupported = IsFormatSupported;
 
-    PaUtil_InitializeStreamInterface( &skeletonHostApi->callbackStreamInterface, CloseStream, StartStream,
-                                      StopStream, AbortStream, IsStreamStopped, IsStreamActive,
-                                      GetStreamTime, GetStreamCpuLoad,
-                                      PaUtil_DummyRead, PaUtil_DummyWrite,
-                                      PaUtil_DummyGetReadAvailable, PaUtil_DummyGetWriteAvailable );
+    PaUtil_InitializeStreamInterface(&skeletonHostApi->callbackStreamInterface,
+            CloseStream, StartStream, StopStream, AbortStream, IsStreamStopped,
+            IsStreamActive, GetStreamTime, GetStreamCpuLoad, PaUtil_DummyRead,
+            PaUtil_DummyWrite, PaUtil_DummyGetReadAvailable,
+            PaUtil_DummyGetWriteAvailable);
 
-    PaUtil_InitializeStreamInterface( &skeletonHostApi->blockingStreamInterface, CloseStream, StartStream,
-                                      StopStream, AbortStream, IsStreamStopped, IsStreamActive,
-                                      GetStreamTime, PaUtil_DummyGetCpuLoad,
-                                      ReadStream, WriteStream, GetStreamReadAvailable, GetStreamWriteAvailable );
+    PaUtil_InitializeStreamInterface(&skeletonHostApi->blockingStreamInterface,
+            CloseStream, StartStream, StopStream, AbortStream, IsStreamStopped,
+            IsStreamActive, GetStreamTime, PaUtil_DummyGetCpuLoad, ReadStream,
+            WriteStream, GetStreamReadAvailable, GetStreamWriteAvailable);
 
     return result;
 
 error:
-    if( skeletonHostApi )
-    {
-        if( skeletonHostApi->allocations )
-        {
-            PaUtil_FreeAllAllocations( skeletonHostApi->allocations );
-            PaUtil_DestroyAllocationGroup( skeletonHostApi->allocations );
+    if (skeletonHostApi) {
+        if (skeletonHostApi->allocations) {
+            PaUtil_FreeAllAllocations(skeletonHostApi->allocations);
+            PaUtil_DestroyAllocationGroup(skeletonHostApi->allocations);
         }
-
-        PaUtil_FreeMemory( skeletonHostApi );
+        PaUtil_FreeMemory(skeletonHostApi);
     }
     return result;
 }
 
 
-static void Terminate( struct PaUtilHostApiRepresentation *hostApi )
+static void Terminate(struct PaUtilHostApiRepresentation *hostApi)
 {
-    PaPulseAudioHostApiRepresentation *skeletonHostApi = (PaPulseAudioHostApiRepresentation*)hostApi;
+    PaPulseAudioHostApiRepresentation *skeletonHostApi =
+        (PaPulseAudioHostApiRepresentation*) hostApi;
 
     /*
         IMPLEMENT ME:
             - clean up any resources not handled by the allocation group
     */
 
-    if( skeletonHostApi->allocations )
-    {
-        PaUtil_FreeAllAllocations( skeletonHostApi->allocations );
-        PaUtil_DestroyAllocationGroup( skeletonHostApi->allocations );
+    if (skeletonHostApi->allocations) {
+        PaUtil_FreeAllAllocations(skeletonHostApi->allocations);
+        PaUtil_DestroyAllocationGroup(skeletonHostApi->allocations);
     }
 
-    PaUtil_FreeMemory( skeletonHostApi );
+    PaUtil_FreeMemory(skeletonHostApi);
 }
 
 
-static PaError IsFormatSupported( struct PaUtilHostApiRepresentation *hostApi,
-                                  const PaStreamParameters *inputParameters,
-                                  const PaStreamParameters *outputParameters,
-                                  double sampleRate )
+static PaError IsFormatSupported(struct PaUtilHostApiRepresentation *hostApi,
+                                 const PaStreamParameters *inputParameters,
+                                 const PaStreamParameters *outputParameters,
+                                 double sampleRate)
 {
     int inputChannelCount, outputChannelCount;
     PaSampleFormat inputSampleFormat, outputSampleFormat;
 
-    if( inputParameters )
-    {
+    if (inputParameters) {
         inputChannelCount = inputParameters->channelCount;
         inputSampleFormat = inputParameters->sampleFormat;
 
         /* all standard sample formats are supported by the buffer adapter,
             this implementation doesn't support any custom sample formats */
-        if( inputSampleFormat & paCustomFormat )
+        if (inputSampleFormat & paCustomFormat)
             return paSampleFormatNotSupported;
 
         /* unless alternate device specification is supported, reject the use of
             paUseHostApiSpecificDeviceSpecification */
 
-        if( inputParameters->device == paUseHostApiSpecificDeviceSpecification )
+        if (inputParameters->device == paUseHostApiSpecificDeviceSpecification)
             return paInvalidDevice;
 
         /* check that input device can support inputChannelCount */
-        if( inputChannelCount > hostApi->deviceInfos[ inputParameters->device ]->maxInputChannels )
+        if (inputChannelCount >
+                hostApi->deviceInfos[inputParameters->device]->maxInputChannels)
             return paInvalidChannelCount;
 
         /* validate inputStreamInfo */
-        if( inputParameters->hostApiSpecificStreamInfo )
+        if (inputParameters->hostApiSpecificStreamInfo)
             return paIncompatibleHostApiSpecificStreamInfo; /* this implementation doesn't use custom stream info */
-    }
-    else
-    {
+    } else {
         inputChannelCount = 0;
     }
 
-    if( outputParameters )
-    {
+    if (outputParameters) {
         outputChannelCount = outputParameters->channelCount;
         outputSampleFormat = outputParameters->sampleFormat;
 
         /* all standard sample formats are supported by the buffer adapter,
             this implementation doesn't support any custom sample formats */
-        if( outputSampleFormat & paCustomFormat )
+        if (outputSampleFormat & paCustomFormat)
             return paSampleFormatNotSupported;
 
         /* unless alternate device specification is supported, reject the use of
             paUseHostApiSpecificDeviceSpecification */
 
-        if( outputParameters->device == paUseHostApiSpecificDeviceSpecification )
+        if (outputParameters->device == paUseHostApiSpecificDeviceSpecification)
             return paInvalidDevice;
 
         /* check that output device can support outputChannelCount */
-        if( outputChannelCount > hostApi->deviceInfos[ outputParameters->device ]->maxOutputChannels )
+        if (outputChannelCount >
+                hostApi->deviceInfos[outputParameters->device]
+                    ->maxOutputChannels)
             return paInvalidChannelCount;
 
         /* validate outputStreamInfo */
-        if( outputParameters->hostApiSpecificStreamInfo )
+        if (outputParameters->hostApiSpecificStreamInfo)
             return paIncompatibleHostApiSpecificStreamInfo; /* this implementation doesn't use custom stream info */
-    }
-    else
-    {
+    } else {
         outputChannelCount = 0;
     }
 
@@ -349,8 +343,7 @@ static PaError IsFormatSupported( struct PaUtilHostApiRepresentation *hostApi,
 
 /* PaPulseAudioStream - a stream data structure specifically for this implementation */
 
-typedef struct PaPulseAudioStream
-{ /* IMPLEMENT ME: rename this */
+typedef struct PaPulseAudioStream {
     PaUtilStreamRepresentation streamRepresentation;
     PaUtilCpuLoadMeasurer cpuLoadMeasurer;
     PaUtilBufferProcessor bufferProcessor;
@@ -359,23 +352,23 @@ typedef struct PaPulseAudioStream
             - implementation specific data goes here
     */
     unsigned long framesPerHostCallback; /* just an example */
-}
-PaPulseAudioStream;
+} PaPulseAudioStream;
 
 /* see pa_hostapi.h for a list of validity guarantees made about OpenStream parameters */
 
-static PaError OpenStream( struct PaUtilHostApiRepresentation *hostApi,
-                           PaStream** s,
-                           const PaStreamParameters *inputParameters,
-                           const PaStreamParameters *outputParameters,
-                           double sampleRate,
-                           unsigned long framesPerBuffer,
-                           PaStreamFlags streamFlags,
-                           PaStreamCallback *streamCallback,
-                           void *userData )
+static PaError OpenStream(struct PaUtilHostApiRepresentation *hostApi,
+                          PaStream** s,
+                          const PaStreamParameters *inputParameters,
+                          const PaStreamParameters *outputParameters,
+                          double sampleRate,
+                          unsigned long framesPerBuffer,
+                          PaStreamFlags streamFlags,
+                          PaStreamCallback *streamCallback,
+                          void *userData)
 {
     PaError result = paNoError;
-    PaPulseAudioHostApiRepresentation *skeletonHostApi = (PaPulseAudioHostApiRepresentation*)hostApi;
+    PaPulseAudioHostApiRepresentation *skeletonHostApi =
+        (PaPulseAudioHostApiRepresentation*)hostApi;
     PaPulseAudioStream *stream = 0;
     unsigned long framesPerHostBuffer = framesPerBuffer; /* these may not be equivalent for all implementations */
     int inputChannelCount, outputChannelCount;
@@ -383,68 +376,66 @@ static PaError OpenStream( struct PaUtilHostApiRepresentation *hostApi,
     PaSampleFormat hostInputSampleFormat, hostOutputSampleFormat;
 
 
-    if( inputParameters )
-    {
+    if (inputParameters) {
         inputChannelCount = inputParameters->channelCount;
         inputSampleFormat = inputParameters->sampleFormat;
 
         /* unless alternate device specification is supported, reject the use of
             paUseHostApiSpecificDeviceSpecification */
 
-        if( inputParameters->device == paUseHostApiSpecificDeviceSpecification )
+        if (inputParameters->device == paUseHostApiSpecificDeviceSpecification)
             return paInvalidDevice;
 
         /* check that input device can support inputChannelCount */
-        if( inputChannelCount > hostApi->deviceInfos[ inputParameters->device ]->maxInputChannels )
+        if (inputChannelCount >
+                hostApi->deviceInfos[inputParameters->device]->maxInputChannels)
             return paInvalidChannelCount;
 
         /* validate inputStreamInfo */
-        if( inputParameters->hostApiSpecificStreamInfo )
+        if (inputParameters->hostApiSpecificStreamInfo)
             return paIncompatibleHostApiSpecificStreamInfo; /* this implementation doesn't use custom stream info */
 
         /* IMPLEMENT ME - establish which  host formats are available */
         hostInputSampleFormat =
-            PaUtil_SelectClosestAvailableFormat( paInt16 /* native formats */, inputSampleFormat );
-    }
-    else
-    {
+            PaUtil_SelectClosestAvailableFormat(paInt16 /* native formats */,
+                    inputSampleFormat);
+    } else {
         inputChannelCount = 0;
-        inputSampleFormat = hostInputSampleFormat = paInt16; /* Surpress 'uninitialised var' warnings. */
+        inputSampleFormat = hostInputSampleFormat = paInt16;
     }
 
-    if( outputParameters )
-    {
+    if (outputParameters) {
         outputChannelCount = outputParameters->channelCount;
         outputSampleFormat = outputParameters->sampleFormat;
 
         /* unless alternate device specification is supported, reject the use of
             paUseHostApiSpecificDeviceSpecification */
 
-        if( outputParameters->device == paUseHostApiSpecificDeviceSpecification )
+        if (outputParameters->device == paUseHostApiSpecificDeviceSpecification)
             return paInvalidDevice;
 
         /* check that output device can support inputChannelCount */
-        if( outputChannelCount > hostApi->deviceInfos[ outputParameters->device ]->maxOutputChannels )
+        if (outputChannelCount > hostApi->deviceInfos[outputParameters->device]
+                ->maxOutputChannels)
             return paInvalidChannelCount;
 
         /* validate outputStreamInfo */
-        if( outputParameters->hostApiSpecificStreamInfo )
+        if (outputParameters->hostApiSpecificStreamInfo)
             return paIncompatibleHostApiSpecificStreamInfo; /* this implementation doesn't use custom stream info */
 
         /* IMPLEMENT ME - establish which  host formats are available */
         hostOutputSampleFormat =
-            PaUtil_SelectClosestAvailableFormat( paInt16 /* native formats */, outputSampleFormat );
-    }
-    else
-    {
+            PaUtil_SelectClosestAvailableFormat(paInt16 /* native formats */,
+                    outputSampleFormat);
+    } else {
         outputChannelCount = 0;
-        outputSampleFormat = hostOutputSampleFormat = paInt16; /* Surpress 'uninitialized var' warnings. */
+        outputSampleFormat = hostOutputSampleFormat = paInt16;
     }
 
     /*
         IMPLEMENT ME:
 
-        ( the following two checks are taken care of by PaUtil_InitializeBufferProcessor() FIXME - checks needed? )
+        (the following two checks are taken care of by PaUtil_InitializeBufferProcessor() FIXME - checks needed?)
 
             - check that input device can support inputSampleFormat, or that
                 we have the capability to convert from outputSampleFormat to
@@ -469,29 +460,29 @@ static PaError OpenStream( struct PaUtilHostApiRepresentation *hostApi,
 
 
     /* validate platform specific flags */
-    if( (streamFlags & paPlatformSpecificFlags) != 0 )
+    if ((streamFlags & paPlatformSpecificFlags) != 0)
         return paInvalidFlag; /* unexpected platform specific flag */
 
 
-    stream = (PaPulseAudioStream*)PaUtil_AllocateMemory( sizeof(PaPulseAudioStream) );
-    if( !stream )
-    {
+    stream =
+        (PaPulseAudioStream*) PaUtil_AllocateMemory(sizeof(PaPulseAudioStream));
+
+    if (!stream) {
         result = paInsufficientMemory;
         goto error;
     }
 
-    if( streamCallback )
-    {
-        PaUtil_InitializeStreamRepresentation( &stream->streamRepresentation,
-                                               &skeletonHostApi->callbackStreamInterface, streamCallback, userData );
-    }
-    else
-    {
-        PaUtil_InitializeStreamRepresentation( &stream->streamRepresentation,
-                                               &skeletonHostApi->blockingStreamInterface, streamCallback, userData );
+    if (streamCallback) {
+        PaUtil_InitializeStreamRepresentation(&stream->streamRepresentation,
+                &skeletonHostApi->callbackStreamInterface, streamCallback,
+                userData);
+    } else {
+        PaUtil_InitializeStreamRepresentation(&stream->streamRepresentation,
+                &skeletonHostApi->blockingStreamInterface, streamCallback,
+                userData);
     }
 
-    PaUtil_InitializeCpuLoadMeasurer( &stream->cpuLoadMeasurer, sampleRate );
+    PaUtil_InitializeCpuLoadMeasurer(&stream->cpuLoadMeasurer, sampleRate);
 
 
     /* we assume a fixed host buffer size in this example, but the buffer processor
@@ -499,13 +490,13 @@ static PaError OpenStream( struct PaUtilHostApiRepresentation *hostApi,
         paUtilBoundedHostBufferSize or paUtilUnknownHostBufferSize instead of
         paUtilFixedHostBufferSize below. */
 
-    result =  PaUtil_InitializeBufferProcessor( &stream->bufferProcessor,
+    result =  PaUtil_InitializeBufferProcessor(&stream->bufferProcessor,
               inputChannelCount, inputSampleFormat, hostInputSampleFormat,
               outputChannelCount, outputSampleFormat, hostOutputSampleFormat,
               sampleRate, streamFlags, framesPerBuffer,
               framesPerHostBuffer, paUtilFixedHostBufferSize,
-              streamCallback, userData );
-    if( result != paNoError )
+              streamCallback, userData);
+    if (result != paNoError)
         goto error;
 
 
@@ -514,9 +505,11 @@ static PaError OpenStream( struct PaUtilHostApiRepresentation *hostApi,
         values.
     */
     stream->streamRepresentation.streamInfo.inputLatency =
-            (PaTime)PaUtil_GetBufferProcessorInputLatencyFrames(&stream->bufferProcessor) / sampleRate; /* inputLatency is specified in _seconds_ */
+            (PaTime) PaUtil_GetBufferProcessorInputLatencyFrames(
+                    &stream->bufferProcessor) / sampleRate; /* inputLatency is specified in _seconds_ */
     stream->streamRepresentation.streamInfo.outputLatency =
-            (PaTime)PaUtil_GetBufferProcessorOutputLatencyFrames(&stream->bufferProcessor) / sampleRate; /* outputLatency is specified in _seconds_ */
+            (PaTime) PaUtil_GetBufferProcessorOutputLatencyFrames(
+                    &stream->bufferProcessor) / sampleRate; /* outputLatency is specified in _seconds_ */
     stream->streamRepresentation.streamInfo.sampleRate = sampleRate;
 
 
@@ -527,13 +520,13 @@ static PaError OpenStream( struct PaUtilHostApiRepresentation *hostApi,
 
     stream->framesPerHostCallback = framesPerHostBuffer;
 
-    *s = (PaStream*)stream;
+    *s = (PaStream*) stream;
 
     return result;
 
 error:
-    if( stream )
-        PaUtil_FreeMemory( stream );
+    if (stream)
+        PaUtil_FreeMemory(stream);
 
     return result;
 }
@@ -543,14 +536,15 @@ error:
     occur in a host implementation.
 
 */
-static void ExampleHostProcessingLoop( void *inputBuffer, void *outputBuffer, void *userData )
+static void ExampleHostProcessingLoop(void *inputBuffer, void *outputBuffer,
+        void *userData)
 {
-    PaPulseAudioStream *stream = (PaPulseAudioStream*)userData;
+    PaPulseAudioStream *stream = (PaPulseAudioStream*) userData;
     PaStreamCallbackTimeInfo timeInfo = {0,0,0}; /* IMPLEMENT ME */
     int callbackResult;
     unsigned long framesProcessed;
 
-    PaUtil_BeginCpuLoadMeasurement( &stream->cpuLoadMeasurer );
+    PaUtil_BeginCpuLoadMeasurement(&stream->cpuLoadMeasurer);
 
     /*
         IMPLEMENT ME:
@@ -565,7 +559,7 @@ static void ExampleHostProcessingLoop( void *inputBuffer, void *outputBuffer, vo
 
 
 
-    PaUtil_BeginBufferProcessing( &stream->bufferProcessor, &timeInfo, 0 /* IMPLEMENT ME: pass underflow/overflow flags when necessary */ );
+    PaUtil_BeginBufferProcessing(&stream->bufferProcessor, &timeInfo, 0 /* IMPLEMENT ME: pass underflow/overflow flags when necessary */);
 
     /*
         depending on whether the host buffers are interleaved, non-interleaved
@@ -573,26 +567,27 @@ static void ExampleHostProcessingLoop( void *inputBuffer, void *outputBuffer, vo
         PaUtil_SetNonInterleaved*Channel() or PaUtil_Set*Channel() here.
     */
 
-    PaUtil_SetInputFrameCount( &stream->bufferProcessor, 0 /* default to host buffer size */ );
-    PaUtil_SetInterleavedInputChannels( &stream->bufferProcessor,
+    PaUtil_SetInputFrameCount(&stream->bufferProcessor, 0 /* default to host buffer size */);
+    PaUtil_SetInterleavedInputChannels(&stream->bufferProcessor,
             0, /* first channel of inputBuffer is channel 0 */
             inputBuffer,
-            0 ); /* 0 - use inputChannelCount passed to init buffer processor */
+            0); /* 0 - use inputChannelCount passed to init buffer processor */
 
-    PaUtil_SetOutputFrameCount( &stream->bufferProcessor, 0 /* default to host buffer size */ );
-    PaUtil_SetInterleavedOutputChannels( &stream->bufferProcessor,
+    PaUtil_SetOutputFrameCount(&stream->bufferProcessor, 0 /* default to host buffer size */);
+    PaUtil_SetInterleavedOutputChannels(&stream->bufferProcessor,
             0, /* first channel of outputBuffer is channel 0 */
             outputBuffer,
-            0 ); /* 0 - use outputChannelCount passed to init buffer processor */
+            0); /* 0 - use outputChannelCount passed to init buffer processor */
 
     /* you must pass a valid value of callback result to PaUtil_EndBufferProcessing()
         in general you would pass paContinue for normal operation, and
         paComplete to drain the buffer processor's internal output buffer.
         You can check whether the buffer processor's output buffer is empty
-        using PaUtil_IsBufferProcessorOuputEmpty( bufferProcessor )
+        using PaUtil_IsBufferProcessorOuputEmpty(bufferProcessor)
     */
     callbackResult = paContinue;
-    framesProcessed = PaUtil_EndBufferProcessing( &stream->bufferProcessor, &callbackResult );
+    framesProcessed = PaUtil_EndBufferProcessing(&stream->bufferProcessor,
+            &callbackResult);
 
 
     /*
@@ -600,30 +595,27 @@ static void ExampleHostProcessingLoop( void *inputBuffer, void *outputBuffer, vo
         host format, do it here.
     */
 
-    PaUtil_EndCpuLoadMeasurement( &stream->cpuLoadMeasurer, framesProcessed );
+    PaUtil_EndCpuLoadMeasurement(&stream->cpuLoadMeasurer, framesProcessed);
 
 
-    if( callbackResult == paContinue )
-    {
+    if (callbackResult == paContinue) {
         /* nothing special to do */
-    }
-    else if( callbackResult == paAbort )
-    {
+    } else if (callbackResult == paAbort) {
         /* IMPLEMENT ME - finish playback immediately  */
 
         /* once finished, call the finished callback */
-        if( stream->streamRepresentation.streamFinishedCallback != 0 )
-            stream->streamRepresentation.streamFinishedCallback( stream->streamRepresentation.userData );
-    }
-    else
-    {
+        if (stream->streamRepresentation.streamFinishedCallback != 0)
+            stream->streamRepresentation.streamFinishedCallback(
+                    stream->streamRepresentation.userData);
+    } else {
         /* User callback has asked us to stop with paComplete or other non-zero value */
 
         /* IMPLEMENT ME - finish playback once currently queued audio has completed  */
 
         /* once finished, call the finished callback */
-        if( stream->streamRepresentation.streamFinishedCallback != 0 )
-            stream->streamRepresentation.streamFinishedCallback( stream->streamRepresentation.userData );
+        if (stream->streamRepresentation.streamFinishedCallback != 0)
+            stream->streamRepresentation.streamFinishedCallback(
+                    stream->streamRepresentation.userData);
     }
 }
 
@@ -632,30 +624,30 @@ static void ExampleHostProcessingLoop( void *inputBuffer, void *outputBuffer, vo
     When CloseStream() is called, the multi-api layer ensures that
     the stream has already been stopped or aborted.
 */
-static PaError CloseStream( PaStream* s )
+static PaError CloseStream(PaStream* s)
 {
     PaError result = paNoError;
-    PaPulseAudioStream *stream = (PaPulseAudioStream*)s;
+    PaPulseAudioStream *stream = (PaPulseAudioStream*) s;
 
     /*
         IMPLEMENT ME:
             - additional stream closing + cleanup
     */
 
-    PaUtil_TerminateBufferProcessor( &stream->bufferProcessor );
-    PaUtil_TerminateStreamRepresentation( &stream->streamRepresentation );
-    PaUtil_FreeMemory( stream );
+    PaUtil_TerminateBufferProcessor(&stream->bufferProcessor);
+    PaUtil_TerminateStreamRepresentation(&stream->streamRepresentation);
+    PaUtil_FreeMemory(stream);
 
     return result;
 }
 
 
-static PaError StartStream( PaStream *s )
+static PaError StartStream(PaStream *s)
 {
     PaError result = paNoError;
-    PaPulseAudioStream *stream = (PaPulseAudioStream*)s;
+    PaPulseAudioStream *stream = (PaPulseAudioStream*) s;
 
-    PaUtil_ResetBufferProcessor( &stream->bufferProcessor );
+    PaUtil_ResetBufferProcessor(&stream->bufferProcessor);
 
     /* IMPLEMENT ME, see portaudio.h for required behavior */
 
@@ -669,10 +661,10 @@ static PaError StartStream( PaStream *s )
 }
 
 
-static PaError StopStream( PaStream *s )
+static PaError StopStream(PaStream *s)
 {
     PaError result = paNoError;
-    PaPulseAudioStream *stream = (PaPulseAudioStream*)s;
+    PaPulseAudioStream *stream = (PaPulseAudioStream*) s;
 
     /* suppress unused variable warnings */
     (void) stream;
@@ -683,10 +675,10 @@ static PaError StopStream( PaStream *s )
 }
 
 
-static PaError AbortStream( PaStream *s )
+static PaError AbortStream(PaStream *s)
 {
     PaError result = paNoError;
-    PaPulseAudioStream *stream = (PaPulseAudioStream*)s;
+    PaPulseAudioStream *stream = (PaPulseAudioStream*) s;
 
     /* suppress unused variable warnings */
     (void) stream;
@@ -697,9 +689,9 @@ static PaError AbortStream( PaStream *s )
 }
 
 
-static PaError IsStreamStopped( PaStream *s )
+static PaError IsStreamStopped(PaStream *s)
 {
-    PaPulseAudioStream *stream = (PaPulseAudioStream*)s;
+    PaPulseAudioStream *stream = (PaPulseAudioStream*) s;
 
     /* suppress unused variable warnings */
     (void) stream;
@@ -710,9 +702,9 @@ static PaError IsStreamStopped( PaStream *s )
 }
 
 
-static PaError IsStreamActive( PaStream *s )
+static PaError IsStreamActive(PaStream *s)
 {
-    PaPulseAudioStream *stream = (PaPulseAudioStream*)s;
+    PaPulseAudioStream *stream = (PaPulseAudioStream*) s;
 
     /* suppress unused variable warnings */
     (void) stream;
@@ -723,9 +715,9 @@ static PaError IsStreamActive( PaStream *s )
 }
 
 
-static PaTime GetStreamTime( PaStream *s )
+static PaTime GetStreamTime(PaStream *s)
 {
-    PaPulseAudioStream *stream = (PaPulseAudioStream*)s;
+    PaPulseAudioStream *stream = (PaPulseAudioStream*) s;
 
     /* suppress unused variable warnings */
     (void) stream;
@@ -736,11 +728,11 @@ static PaTime GetStreamTime( PaStream *s )
 }
 
 
-static double GetStreamCpuLoad( PaStream* s )
+static double GetStreamCpuLoad(PaStream* s)
 {
-    PaPulseAudioStream *stream = (PaPulseAudioStream*)s;
+    PaPulseAudioStream *stream = (PaPulseAudioStream*) s;
 
-    return PaUtil_GetCpuLoad( &stream->cpuLoadMeasurer );
+    return PaUtil_GetCpuLoad(&stream->cpuLoadMeasurer);
 }
 
 
@@ -750,11 +742,9 @@ static double GetStreamCpuLoad( PaStream* s )
     for blocking streams.
 */
 
-static PaError ReadStream( PaStream* s,
-                           void *buffer,
-                           unsigned long frames )
+static PaError ReadStream(PaStream* s, void *buffer, unsigned long frames)
 {
-    PaPulseAudioStream *stream = (PaPulseAudioStream*)s;
+    PaPulseAudioStream *stream = (PaPulseAudioStream*) s;
 
     /* suppress unused variable warnings */
     (void) buffer;
@@ -767,11 +757,10 @@ static PaError ReadStream( PaStream* s,
 }
 
 
-static PaError WriteStream( PaStream* s,
-                            const void *buffer,
-                            unsigned long frames )
+static PaError WriteStream(PaStream* s, const void *buffer,
+        unsigned long frames)
 {
-    PaPulseAudioStream *stream = (PaPulseAudioStream*)s;
+    PaPulseAudioStream *stream = (PaPulseAudioStream*) s;
 
     /* suppress unused variable warnings */
     (void) buffer;
@@ -784,9 +773,9 @@ static PaError WriteStream( PaStream* s,
 }
 
 
-static signed long GetStreamReadAvailable( PaStream* s )
+static signed long GetStreamReadAvailable(PaStream* s)
 {
-    PaPulseAudioStream *stream = (PaPulseAudioStream*)s;
+    PaPulseAudioStream *stream = (PaPulseAudioStream*) s;
 
     /* suppress unused variable warnings */
     (void) stream;
@@ -797,9 +786,9 @@ static signed long GetStreamReadAvailable( PaStream* s )
 }
 
 
-static signed long GetStreamWriteAvailable( PaStream* s )
+static signed long GetStreamWriteAvailable(PaStream* s)
 {
-    PaPulseAudioStream *stream = (PaPulseAudioStream*)s;
+    PaPulseAudioStream *stream = (PaPulseAudioStream*) s;
 
     /* suppress unused variable warnings */
     (void) stream;
@@ -808,7 +797,3 @@ static signed long GetStreamWriteAvailable( PaStream* s )
 
     return 0;
 }
-
-
-
-
